@@ -6,14 +6,13 @@ import (
 	"strconv"
 )
 
-func ReadFileToString(name string) string {
-	str, err := os.ReadFile(name)
-
+func ReadFileToString(name string) (str string) {
+	b, err := os.ReadFile(name)
 	if err != nil {
-		fmt.Print(err)
+		fmt.Println("ReadFileToString error: ", err)
 	}
-
-	return string(str)
+	str = string(b)
+	return
 }
 
 func ParseInt(str string) (i int, err error) {
