@@ -34,25 +34,21 @@ var SpelledDigits = []string{
 func SearchStrForInts(str string) (int, int) {
 	chars := strings.Split(str, "")
 	foundDigits := []int{}
-	for i := 0; i < len(chars); i++ {
-		char := chars[i]
+	for chIdx := 0; chIdx < len(chars); chIdx++ {
+		char := chars[chIdx]
 		if digitInt, err := strconv.ParseInt(char, 10, 64); err == nil {
 			foundDigits = append(foundDigits, int(digitInt))
 		} else {
-			a := 0
-			found := false
-			for !found && a < len(SpelledDigits) {
-				spelledDigit := SpelledDigits[a]
-
-				if endOfSlice := i + len(spelledDigit); endOfSlice <= len(chars) {
-					possibleSpelled := strings.Join(chars[i:endOfSlice], "")
-					spelledDigitInt, isSpelled := DigitIntMap[possibleSpelled]
-					if isSpelled {
+		spelledCheck:
+			for spIdx := 0; spIdx < len(SpelledDigits); spIdx++ {
+				spelledDigit := SpelledDigits[spIdx]
+				if endOfSlice := chIdx + len(spelledDigit); endOfSlice <= len(chars) {
+					possibleSpelled := strings.Join(chars[chIdx:endOfSlice], "")
+					if spelledDigitInt, isSpelled := DigitIntMap[possibleSpelled]; isSpelled {
 						foundDigits = append(foundDigits, spelledDigitInt)
-						found = true
+						break spelledCheck
 					}
 				}
-				a++
 			}
 		}
 	}
