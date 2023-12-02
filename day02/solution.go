@@ -3,7 +3,6 @@ package day02
 import (
 	"aoc/utils"
 	"fmt"
-	"strconv"
 	"strings"
 )
 
@@ -24,32 +23,27 @@ func Solve() {
 		handfulsStr := idAndHandfuls[1]
 		handfuls := strings.Split(handfulsStr, "; ")
 
-		valid := true
-	handfulCheck:
+		maxElfBag := map[string]int{}
 		for iH := 0; iH < len(handfuls); iH++ {
 			handful := handfuls[iH]
 			cubeCountStrs := strings.Split(handful, ", ")
 			for iC := 0; iC < len(cubeCountStrs); iC++ {
 				cubeCountStr := cubeCountStrs[iC]
 				countAndColor := strings.Split(cubeCountStr, " ")
-				count, countParseErr := strconv.ParseInt(countAndColor[0], 10, 64)
-				color := countAndColor[1]
-				colorTotal, colorOk := ElfBag[color]
-				if countParseErr == nil && colorOk {
-					if int(count) > colorTotal {
-						valid = false
-						break handfulCheck
+				if count, countParseErr := utils.ParseInt(countAndColor[0]); countParseErr == nil {
+					color := countAndColor[1]
+					colorTotal, colorOk := maxElfBag[color]
+					if (colorOk && colorTotal < count) || !colorOk {
+						maxElfBag[color] = count
 					}
 				}
 			}
 		}
-		if valid {
-			gameAndId := strings.Split(idAndHandfuls[0], " ")
-			id, idParseErr := strconv.ParseInt(gameAndId[1], 10, 64)
-			if idParseErr == nil {
-				sum += int(id)
-			}
+		power := 1
+		for _, maxCount := range maxElfBag {
+			power *= maxCount
 		}
+		sum += power
 	}
-	fmt.Println("Sum of all valid game IDs: ", sum)
+	fmt.Println("Sum of every set power: ", sum)
 }
