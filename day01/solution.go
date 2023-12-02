@@ -7,31 +7,57 @@ import (
 	"strings"
 )
 
+var DigitIntMap = map[string]int{
+	"one":   1,
+	"two":   2,
+	"three": 3,
+	"four":  4,
+	"five":  5,
+	"six":   6,
+	"seven": 7,
+	"eight": 8,
+	"nine":  9,
+}
+
+var SpelledDigits = []string{
+	"one",
+	"two",
+	"three",
+	"four",
+	"five",
+	"six",
+	"seven",
+	"eight",
+	"nine",
+}
+
 func SearchStrForInts(str string) (int, int) {
 	chars := strings.Split(str, "")
-	var firstDigit, lastDigit int
-	strLen := len(chars)
-	start := 0
-	end := strLen - 1
-	for firstDigit == 0 || lastDigit == 0 {
+	foundDigits := []int{}
+	for i := 0; i < len(chars); i++ {
+		char := chars[i]
+		if digitInt, err := strconv.ParseInt(char, 10, 64); err == nil {
+			foundDigits = append(foundDigits, int(digitInt))
+		} else {
+			a := 0
+			found := false
+			for !found && a < len(SpelledDigits) {
+				spelledDigit := SpelledDigits[a]
 
-		startChar := chars[start]
-		endChar := chars[end]
-
-		if startInt, err := strconv.ParseInt(startChar, 10, 64); firstDigit == 0 && err == nil {
-			firstDigit = int(startInt)
-		}
-
-		if endInt, err := strconv.ParseInt(endChar, 10, 64); lastDigit == 0 && err == nil {
-			lastDigit = int(endInt)
-		}
-		if firstDigit == 0 {
-			start++
-		}
-		if lastDigit == 0 {
-			end--
+				if endOfSlice := i + len(spelledDigit); endOfSlice <= len(chars) {
+					possibleSpelled := strings.Join(chars[i:endOfSlice], "")
+					spelledDigitInt, isSpelled := DigitIntMap[possibleSpelled]
+					if isSpelled {
+						foundDigits = append(foundDigits, spelledDigitInt)
+						found = true
+					}
+				}
+				a++
+			}
 		}
 	}
+	firstDigit := foundDigits[0]
+	lastDigit := foundDigits[len(foundDigits)-1]
 	return firstDigit, lastDigit
 }
 
