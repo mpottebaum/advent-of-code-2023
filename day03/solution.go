@@ -4,30 +4,72 @@ import (
 	"aoc/utils"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 )
 
-func CheckOtherRow(row string, prevI int, nextI int, regex regexp.Regexp) bool {
-	rowChars := strings.Split(row, "")
-	var iInit int
-	if isPrevIValid := prevI >= 0; isPrevIValid {
-		iInit = prevI
-	} else {
-		iInit = 0
-	}
-	var iEnd int
-	if isNextIValid := (nextI + 1) < len(row); isNextIValid {
-		iEnd = nextI + 1
-	} else {
-		iEnd = len(row)
-	}
-	for i := iInit; i < iEnd; i++ {
-		rowChar := rowChars[i]
-		if rowAdj := regex.MatchString(rowChar); rowAdj {
-			return true
+func GetDigit(rowChars []string, startI int, digitFinder regexp.Regexp) (int, error) {
+	startChar := rowChars[startI]
+	leftChars := []string{}
+	rightChars := []string{}
+
+	isLeftActive := true
+	isRightActive := true
+	left := startI - 1
+	right := startI + 1
+	for isLeftActive || isRightActive {
+		if isLeftActive == true && left >= 0 {
+			leftChar := rowChars[left]
+			if isDigit := digitFinder.MatchString(leftChar); isDigit {
+				leftChars = append(leftChars, leftChar)
+			} else {
+				isLeftActive = false
+			}
+			left--
+		} else {
+			isLeftActive = false
+		}
+		if isRightActive == true && right < len(rowChars) {
+			rightChar := rowChars[right]
+			if isDigit := digitFinder.MatchString(rightChar); isDigit {
+				rightChars = append(rightChars, rightChar)
+			} else {
+				isRightActive = false
+			}
+			right++
+		} else {
+			isRightActive = false
 		}
 	}
-	return false
+	slices.Reverse(leftChars)
+	numberChars := append(leftChars, startChar)
+	numberChars = append(numberChars, rightChars...)
+	joinedNumber := strings.Join(numberChars, "")
+	numberInt, parseErr := utils.ParseInt(joinedNumber)
+	return numberInt, parseErr
+}
+
+func GetAdjacentDigitFromRow(row string, startI int, digitFinder regexp.Regexp) []int {
+	rowChars := strings.Split(row, "")
+	rowChar := rowChars[startI]
+	adjDigits := []int{}
+	if isDigit := digitFinder.MatchString(rowChar); isDigit {
+		if digit, err := GetDigit(rowChars, startI, digitFinder); err == nil {
+			adjDigits = append(adjDigits, digit)
+			return adjDigits
+		}
+	}
+	if prevI := startI - 1; prevI >= 0 {
+		if digit, err := GetDigit(rowChars, prevI, digitFinder); err == nil {
+			adjDigits = append(adjDigits, digit)
+		}
+	}
+	if nextI := startI + 1; nextI < len(rowChars) {
+		if digit, err := GetDigit(rowChars, nextI, digitFinder); err == nil {
+			adjDigits = append(adjDigits, digit)
+		}
+	}
+	return adjDigits
 }
 
 func Solve(inputFile string) {
@@ -39,10 +81,8 @@ func Solve(inputFile string) {
 
 	rows := strings.Split(input, "\n")
 	digitFinder, digRegexErr := regexp.Compile("\\d")
-	symbolFinder, symRegexErr := regexp.Compile("[^a-zA-Z0-9_\\.]")
-	if digRegexErr != nil || symRegexErr != nil {
+	if digRegexErr != nil {
 		fmt.Println("digit regex err ", digRegexErr)
-		fmt.Println("symbol regex err ", symRegexErr)
 	}
 	sum := 0
 	var prevRow string
@@ -52,68 +92,48 @@ func Solve(inputFile string) {
 		row := rows[rI]
 		// find each number in the row
 		rowChars := strings.Split(row, "")
-		startI := 0
-		endI := 1
-		for startI < len(rowChars) {
+		for startI := 0; startI < len(rowChars); startI++ {
 			char := rowChars[startI]
-			if digitFinder.MatchString(char) {
-				numberChars := []string{char}
-				// get rest of number
-				for endI < len(rowChars) {
-					nextChar := rowChars[endI]
-					if digitFinder.MatchString(nextChar) {
-						numberChars = append(numberChars, nextChar)
-						endI++
-					} else {
-						break
+			if char == "*" {
+				// search for adjacent numbers
+				prevI := startI - 1
+				nextI := startI + 1
+				adjacentNumbers := []int{}
+				// a. search same row for adjacent numbers
+				if prevI >= 0 {
+					if prevInt, err := GetDigit(rowChars, prevI, *digitFinder); err == nil {
+						adjacentNumbers = append(adjacentNumbers, prevInt)
 					}
 				}
-
-				joinedNumber := strings.Join(numberChars, "")
-				if numberInt, parseErr := utils.ParseInt(joinedNumber); parseErr == nil {
-					// search for adjacent symbols
-					isPartNumber := false
-					prevI := startI - 1
-					nextI := endI
-					// a. search same row for adjacent symbols
-					if prevI >= 0 {
-						prevChar := rowChars[prevI]
-						if prevAdj := symbolFinder.MatchString(prevChar); prevAdj {
-							isPartNumber = true
-						}
-					}
-					if isPartNumber == false && nextI < len(rowChars) {
-						nextChar := rowChars[nextI]
-						if nextAdj := symbolFinder.MatchString(nextChar); nextAdj {
-							isPartNumber = true
-						}
-					}
-					// b. search previous row for adjacent symbols
-					if isPartNumber == false && rI-1 > 0 {
-						//   	include diagonals
-						prevRow = rows[rI-1]
-						isPartNumber = CheckOtherRow(prevRow, prevI, nextI, *symbolFinder)
-					}
-					// c. search next row for adjacent symbols
-					if isPartNumber == false && rI+1 < len(rows) {
-						//   	include diagonals
-						nextRow = rows[rI+1]
-						isPartNumber = CheckOtherRow(nextRow, prevI, nextI, *symbolFinder)
-					}
-					// if any adj symbol is found, add number to sum
-					if isPartNumber {
-						sum += numberInt
+				if nextI < len(rowChars) {
+					if nextInt, err := GetDigit(rowChars, nextI, *digitFinder); err == nil {
+						adjacentNumbers = append(adjacentNumbers, nextInt)
 					}
 				}
-				// set start index to next char after number search break
-				startI = endI + 1
-				endI = startI + 1
-			} else {
-				// no digit, increment indexes
-				startI++
-				endI = startI + 1
+				// b. search previous row for adjacent numbers
+				if rI-1 >= 0 {
+					prevRow = rows[rI-1]
+					moreAdjNums := GetAdjacentDigitFromRow(prevRow, startI, *digitFinder)
+					if len(moreAdjNums) > 0 {
+						adjacentNumbers = append(adjacentNumbers, moreAdjNums...)
+					}
+				}
+				// c. search next row for adjacent numbers
+				if rI+1 < len(rows) {
+					nextRow = rows[rI+1]
+					moreAdjNums := GetAdjacentDigitFromRow(nextRow, startI, *digitFinder)
+					if len(moreAdjNums) > 0 {
+						adjacentNumbers = append(adjacentNumbers, moreAdjNums...)
+					}
+				}
+				// if there are two adjacent numbers, multiply them and add to sum
+				if len(adjacentNumbers) == 2 {
+					partNumOne := adjacentNumbers[0]
+					partNumTwo := adjacentNumbers[1]
+					gearRatio := partNumOne * partNumTwo
+					sum += gearRatio
+				}
 			}
-
 		}
 	}
 	fmt.Println("Sum of all part numbers: ", sum)
