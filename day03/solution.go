@@ -8,6 +8,17 @@ import (
 	"strings"
 )
 
+func SearchForDigits(i int, rowChars []string, isInBounds bool, digitFinder regexp.Regexp) (string, bool) {
+	var char string
+	if isInBounds {
+		char = rowChars[i]
+		if char := rowChars[i]; digitFinder.MatchString(char) {
+			return char, true
+		}
+	}
+	return char, false
+}
+
 func GetDigit(rowChars []string, startI int, digitFinder regexp.Regexp) (int, error) {
 	startChar := rowChars[startI]
 	leftChars := []string{}
@@ -18,28 +29,19 @@ func GetDigit(rowChars []string, startI int, digitFinder regexp.Regexp) (int, er
 	left := startI - 1
 	right := startI + 1
 	for isLeftActive || isRightActive {
-		if isLeftActive == true && left >= 0 {
-			leftChar := rowChars[left]
-			if isDigit := digitFinder.MatchString(leftChar); isDigit {
-				leftChars = append(leftChars, leftChar)
-			} else {
-				isLeftActive = false
-			}
+		leftChar, isLeftDigit := SearchForDigits(left, rowChars, left >= 0, digitFinder)
+		if isLeftDigit {
+			leftChars = append(leftChars, leftChar)
 			left--
-		} else {
-			isLeftActive = false
 		}
-		if isRightActive == true && right < len(rowChars) {
-			rightChar := rowChars[right]
-			if isDigit := digitFinder.MatchString(rightChar); isDigit {
-				rightChars = append(rightChars, rightChar)
-			} else {
-				isRightActive = false
-			}
+		isLeftActive = isLeftDigit
+
+		rightChar, isRightDigit := SearchForDigits(right, rowChars, right < len(rowChars), digitFinder)
+		if isRightDigit {
+			rightChars = append(rightChars, rightChar)
 			right++
-		} else {
-			isRightActive = false
 		}
+		isRightActive = isRightDigit
 	}
 	slices.Reverse(leftChars)
 	numberChars := append(leftChars, startChar)
@@ -51,22 +53,26 @@ func GetDigit(rowChars []string, startI int, digitFinder regexp.Regexp) (int, er
 
 func GetAdjacentDigitFromRow(row string, startI int, digitFinder regexp.Regexp) []int {
 	rowChars := strings.Split(row, "")
-	rowChar := rowChars[startI]
 	adjDigits := []int{}
-	if isDigit := digitFinder.MatchString(rowChar); isDigit {
-		if digit, err := GetDigit(rowChars, startI, digitFinder); err == nil {
-			adjDigits = append(adjDigits, digit)
-			return adjDigits
+
+	for i := startI; ; {
+		if i >= 0 && i < len(rowChars) {
+			char := rowChars[i]
+			if digitFinder.MatchString(char) {
+				if digit, err := GetDigit(rowChars, i, digitFinder); err == nil {
+					adjDigits = append(adjDigits, digit)
+					if i == startI {
+						return adjDigits
+					}
+				}
+			}
 		}
-	}
-	if prevI := startI - 1; prevI >= 0 {
-		if digit, err := GetDigit(rowChars, prevI, digitFinder); err == nil {
-			adjDigits = append(adjDigits, digit)
-		}
-	}
-	if nextI := startI + 1; nextI < len(rowChars) {
-		if digit, err := GetDigit(rowChars, nextI, digitFinder); err == nil {
-			adjDigits = append(adjDigits, digit)
+		if i == startI {
+			i = startI + 1
+		} else if i == startI+1 {
+			i = startI - 1
+		} else {
+			break
 		}
 	}
 	return adjDigits
@@ -87,18 +93,26 @@ func Solve(inputFile string) {
 	sum := 0
 	var prevRow string
 	var nextRow string
+	var row string
+	var rowChars []string
+	var char string
+	var startI int
+	var prevI int
+	var nextI int
+	var adjacentNumbers []int
 	// for every row
 	for rI := 0; rI < len(rows); rI++ {
-		row := rows[rI]
+		row = rows[rI]
 		// find each number in the row
-		rowChars := strings.Split(row, "")
-		for startI := 0; startI < len(rowChars); startI++ {
-			char := rowChars[startI]
+		rowChars = strings.Split(row, "")
+		startI = 0
+		for ; startI < len(rowChars); startI++ {
+			char = rowChars[startI]
 			if char == "*" {
 				// search for adjacent numbers
-				prevI := startI - 1
-				nextI := startI + 1
-				adjacentNumbers := []int{}
+				prevI = startI - 1
+				nextI = startI + 1
+				adjacentNumbers = []int{}
 				// a. search same row for adjacent numbers
 				if prevI >= 0 {
 					if prevInt, err := GetDigit(rowChars, prevI, *digitFinder); err == nil {
