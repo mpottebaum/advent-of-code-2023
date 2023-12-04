@@ -14,42 +14,51 @@ func Solve(inputFile string) {
 	input := utils.ReadFileToString("day04/" + fileName + ".txt")
 
 	scratchCards := strings.Split(input, "\n")
-	totalPoints := 0
+	copiesMap := map[int]int{}
 
+	var scratchCard, winningNum, myNum string
+	var cardTitleAndNums, winningAndMyNums, winningNums, myNums []string
+	var winningMap map[string]bool
+	var matchingNums, cardNum, nextNum, numCopies int
 	// for each scratch card
 	for cI := 0; cI < len(scratchCards); cI++ {
-		scratchCard := scratchCards[cI]
-		// isolate winning numbers and myNumbers
-		cardTitleAndNums := strings.Split(scratchCard, ": ")
-		allNums := cardTitleAndNums[1]
-		winningAndMyNums := strings.Split(allNums, " | ")
-		winningNums := strings.Split(winningAndMyNums[0], " ")
-		myNums := strings.Split(winningAndMyNums[1], " ")
+		scratchCard = scratchCards[cI]
+		// winning numbers and myNumbers
+		cardTitleAndNums = strings.Split(scratchCard, ": ")
+		winningAndMyNums = strings.Split(cardTitleAndNums[1], " | ")
+		winningNums = strings.Split(winningAndMyNums[0], " ")
+		myNums = strings.Split(winningAndMyNums[1], " ")
 		// create lookup map of winning numbers
-		var winningMap = map[string]bool{}
+		winningMap = map[string]bool{}
 		for wI := 0; wI < len(winningNums); wI++ {
-			winningNum := winningNums[wI]
 			// account for extra space from single digits
-			if len(winningNum) > 0 {
+			if winningNum = winningNums[wI]; len(winningNum) > 0 {
 				winningMap[winningNum] = true
 			}
 		}
 		// check each myNumber against lookup map
-		points := 0
+		matchingNums = 0
 		for mI := 0; mI < len(myNums); mI++ {
-			myNum := myNums[mI]
-			_, ok := winningMap[myNum]
-			if ok {
-				// for each match, double point value (init points at 0)
-				if points == 0 {
-					points = 1
-				} else {
-					points *= 2
-				}
+			myNum = myNums[mI]
+			if _, isMatch := winningMap[myNum]; isMatch {
+				// count matches
+				matchingNums += 1
 			}
 		}
-		totalPoints += points
+		// tally card copies from win
+		cardNum = cI + 1
+		numCopies = copiesMap[cardNum]
+		for nextNum = cardNum + 1; nextNum <= cardNum+matchingNums && nextNum <= len(scratchCards); nextNum++ {
+			if _, exists := copiesMap[nextNum]; exists {
+				copiesMap[nextNum] += 1 + numCopies
+			} else {
+				copiesMap[nextNum] = 1 + numCopies
+			}
+		}
 	}
-
-	fmt.Println("Total scratchcard points: ", totalPoints)
+	totalCardCount := len(scratchCards)
+	for _, copiesCount := range copiesMap {
+		totalCardCount += copiesCount
+	}
+	fmt.Println("Total scratchcard count: ", totalCardCount)
 }
