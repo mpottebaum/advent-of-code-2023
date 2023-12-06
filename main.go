@@ -6,6 +6,7 @@ import (
 	day03 "aoc/day03"
 	day04 "aoc/day04"
 	day05 "aoc/day05"
+	day06 "aoc/day06"
 	"os"
 )
 
@@ -26,6 +27,8 @@ func main() {
 			day04.Solve(inputFile)
 		case "5":
 			day05.Solve(inputFile)
+		case "6":
+			day06.Solve(inputFile)
 		}
 	}
 }
