@@ -3,6 +3,7 @@ package day06
 import (
 	"aoc/utils"
 	"fmt"
+	"math"
 	"strings"
 )
 
@@ -13,41 +14,29 @@ func Solve(inputFile string) {
 	}
 	input := utils.ReadFileToString("day06/" + fileName + ".txt")
 	rows := strings.Split(input, "\n")
-	// create slice of times, slice of distances from input
+
 	timesStrs := strings.Fields(rows[0])
+	timeStr := strings.Join(timesStrs[1:], "")
 	distancesStrs := strings.Fields(rows[1])
-	races := make([][2]int, 0, len(timesStrs)-1)
-	for i := 0; i < len(timesStrs); i++ {
-		timeStr := timesStrs[i]
-		distanceStr := distancesStrs[i]
-		timeInt, timeErr := utils.ParseInt(timeStr)
-		distanceInt, distanceErr := utils.ParseInt(distanceStr)
-		if timeErr == nil && distanceErr == nil {
-			raceTuple := [2]int{
-				timeInt,
-				distanceInt,
-			}
-			races = append(races, raceTuple)
-		}
+	distanceStr := strings.Join(distancesStrs[1:], "")
+
+	var wins int
+
+	time, timeErr := utils.ParseInt(timeStr)
+	distanceRecord, distanceErr := utils.ParseInt(distanceStr)
+
+	if timeErr == nil && distanceErr == nil {
+		a := float64(-1)
+		b := float64(time)
+		c := float64(-1 * distanceRecord)
+
+		discriminant := (b * b) - (4 * a * c)
+		rootAFloat := (-b + math.Sqrt(discriminant)) / (2 * a)
+		rootBFloat := (-b - math.Sqrt(discriminant)) / (2 * a)
+		minHold := math.Floor(rootAFloat) + 1
+		maxHold := math.Ceil(rootBFloat) - 1
+
+		wins = int(maxHold - minHold + 1)
 	}
-	multipliedWins := 1
-	// for each race
-	for i := 0; i < len(races); i++ {
-		// test the different lengths of button holding
-		race := races[i]
-		time := race[0]
-		distanceRecord := race[1]
-		raceWins := 0
-		for holdButtonMs := 1; holdButtonMs <= time; holdButtonMs++ {
-			speed := holdButtonMs
-			remainingMs := time - holdButtonMs
-			distance := speed * remainingMs
-			if distance > distanceRecord {
-				raceWins++
-			}
-		}
-		// multiply by and reassign to multipliedWins
-		multipliedWins *= raceWins
-	}
-	fmt.Println("Number of ways to win each race multiplied by each other: ", multipliedWins)
+	fmt.Println("Number of ways to win: ", wins)
 }
