@@ -30,9 +30,8 @@ func Solve(inputFile string) {
 		b := float64(time)
 		c := float64(-1 * distanceRecord)
 
-		discriminant := (b * b) - (4 * a * c)
-		rootAFloat := (-b + math.Sqrt(discriminant)) / (2 * a)
-		rootBFloat := (-b - math.Sqrt(discriminant)) / (2 * a)
+		rootAFloat, rootBFloat := utils.AutoQuadraticForThePeople(a, b, c)
+
 		minHold := math.Floor(rootAFloat) + 1
 		maxHold := math.Ceil(rootBFloat) - 1
 
