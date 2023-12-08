@@ -11,8 +11,123 @@ var faceCardMap = map[string]int{
 	"A": 14,
 	"K": 13,
 	"Q": 12,
-	"J": 11,
+	"J": 1,
 	"T": 10,
+}
+
+func GetHandType(hand string) int {
+	cards := strings.Split(hand, "")
+	cardCountsMap := map[string]int{}
+	for iCard := 0; iCard < len(cards); iCard++ {
+		card := cards[iCard]
+		if count, exists := cardCountsMap[card]; exists {
+			cardCountsMap[card] = count + 1
+		} else {
+			cardCountsMap[card] = 1
+		}
+	}
+	numJokers := 0
+	counts := []int{}
+	for card, count := range cardCountsMap {
+		counts = append(counts, count)
+		if card == "J" {
+			numJokers = count
+		}
+	}
+
+	sort.Slice(counts, func(iA, iB int) bool {
+		countA := counts[iA]
+		countB := counts[iB]
+		return countA > countB
+	})
+
+	countsLength := len(counts)
+
+	countsLenNoJoke := countsLength - 1
+	switch numJokers {
+	case 4:
+		// always 5kind
+		return 0
+	case 3:
+		// 2 are eq => 5kind
+		if countsLenNoJoke == 1 {
+			return 0
+		}
+		// 2 are diff => 4kind
+		return 1
+	case 2:
+		// 3 are eq => 5kind
+		if countsLenNoJoke == 1 {
+			return 0
+		}
+		// 2 are eq, 1 diff => 4kind
+		if countsLenNoJoke == 2 {
+			return 1
+		}
+		// 3 diff => 3kind
+		if countsLenNoJoke == 3 {
+			return 3
+		}
+	case 1:
+		// 4 are eq => 5kind
+		if countsLenNoJoke == 1 {
+			return 0
+		}
+		if countsLenNoJoke == 2 {
+			// 3 are eq, 1 diff => 4kind
+			if counts[0] == 3 {
+				return 1
+			}
+			// 2 eq, 2eq  => FH
+			return 2
+		}
+		if countsLenNoJoke == 3 {
+			// 2 eq, 2 diff => 3kind
+			return 3
+		}
+		if countsLenNoJoke == 4 {
+			// 4 diff => 1pair
+			return 5
+		}
+	default:
+		// do nothing
+	}
+
+	switch countsLength {
+	case 1:
+		// five of a kind
+		return 0
+	case 2:
+		if counts[0] == 4 {
+			// four of a kind
+			return 1
+		}
+		// full house
+		return 2
+	case 3:
+		if counts[0] == 3 {
+			// three of a kind
+			return 3
+		}
+		// two pair
+		return 4
+	case 4:
+		// one pair
+		return 5
+	default:
+		// high card
+		return 6
+	}
+}
+
+func GetCardStrength(card string) int {
+	if val, ok := faceCardMap[card]; ok {
+		return val
+	}
+	if val, err := utils.ParseInt(card); err == nil {
+		return val
+	}
+	return 0
 }
 
 func Solve(inputFile string) {
@@ -32,72 +147,13 @@ func Solve(inputFile string) {
 		hand := handAndBidStrs[0]
 		bid := handAndBidStrs[1]
 
-		// identify hand type
-		cards := strings.Split(hand, "")
-		cardCountsMap := map[string]int{}
-		for iCard := 0; iCard < len(cards); iCard++ {
-			card := cards[iCard]
-			if count, exists := cardCountsMap[card]; exists {
-				cardCountsMap[card] = count + 1
-			} else {
-				cardCountsMap[card] = 1
-			}
-		}
-		countsSlice := []int{}
-		for _, count := range cardCountsMap {
-			countsSlice = append(countsSlice, count)
-		}
-
-		// create a map k: hand type v: [][hand, bid] slice of hand tuples
 		handData := [2]string{
 			hand,
 			bid,
 		}
-		if len(countsSlice) == 1 {
-			// five of a kind
-			handTypes[0] = append(handTypes[0], handData)
-		} else if len(countsSlice) == 2 {
-			isFourOfAKind := false
-			for iCount := 0; iCount < 2; iCount++ {
-				count := countsSlice[iCount]
-				if count == 4 {
-					isFourOfAKind = true
-					break
-				}
-			}
-			if isFourOfAKind {
-				// four of a kind
-				handTypes[1] = append(handTypes[1], handData)
-			} else {
-				// full house
-				handTypes[2] = append(handTypes[2], handData)
-			}
-		} else if len(countsSlice) == 3 {
-			isThreeOfAKind := false
-			for iCount := 0; iCount < 3; iCount++ {
-				count := countsSlice[iCount]
-				if count == 3 {
-					isThreeOfAKind = true
-					break
-				}
-			}
-			if isThreeOfAKind {
-				// three of a kind
-				handTypes[3] = append(handTypes[3], handData)
-
-			} else {
-				// two pair
-				handTypes[4] = append(handTypes[4], handData)
-
-			}
-		} else if len(countsSlice) == 4 {
-			// one pair
-			handTypes[5] = append(handTypes[5], handData)
-
-		} else {
-			// high card
-			handTypes[6] = append(handTypes[6], handData)
-		}
+		// identify hand type
+		handTypeIndex := GetHandType(hand)
+		handTypes[handTypeIndex] = append(handTypes[handTypeIndex], handData)
 	}
 
 	totalWinnings := 0
@@ -113,25 +169,14 @@ func Solve(inputFile string) {
 			splitA := strings.Split(handA, "")
 			splitB := strings.Split(handB, "")
 			for iCard := 0; iCard < len(splitA); iCard++ {
-				var valA, valB int
 				cardA := splitA[iCard]
 				cardB := splitB[iCard]
-				if val, ok := faceCardMap[cardA]; ok {
-					valA = val
-				}
-				if val, err := utils.ParseInt(cardA); err == nil {
-					valA = val
-				}
-				if val, ok := faceCardMap[cardB]; ok {
-					valB = val
-				}
-				if val, err := utils.ParseInt(cardB); err == nil {
-					valB = val
-				}
-				if valA > valB {
+				strengthA := GetCardStrength(cardA)
+				strengthB := GetCardStrength(cardB)
+				if strengthA > strengthB {
 					return true
 				}
-				if valA < valB {
+				if strengthA < strengthB {
 					return false
 				}
 			}
