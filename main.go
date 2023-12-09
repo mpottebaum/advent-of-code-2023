@@ -8,6 +8,7 @@ import (
 	day05 "aoc/day05"
 	day06 "aoc/day06"
 	day07 "aoc/day07"
+	day08 "aoc/day08"
 	"os"
 )
 
@@ -32,6 +33,8 @@ func main() {
 			day06.Solve(inputFile)
 		case "7":
 			day07.Solve(inputFile)
+		case "8":
+			day08.Solve(inputFile)
 		}
 	}
 }
