@@ -25,35 +25,32 @@ func Solve(inputFile string) {
 				values = append(values, value)
 			}
 		}
-		sequences = append(sequences, values)
 		// find diffs
+		diffs := values
 		for {
-			diffs := []int{}
-			isBreaker := true
+			sequences = append(sequences, diffs)
+			values = diffs
+			diffs = []int{}
+			isZeroes := true
 			for i := 0; i < len(values)-1; i++ {
 				currVal := values[i]
 				nextVal := values[i+1]
 				diff := nextVal - currVal
-				if diff != 0 && isBreaker {
-					isBreaker = false
+				if diff != 0 && isZeroes {
+					isZeroes = false
 				}
 				diffs = append(diffs, diff)
 			}
-			if isBreaker {
+			if isZeroes {
 				break
 			}
-
-			sequences = append(sequences, diffs)
-			values = diffs
 		}
-
 		// extrapolate row
 		diff := 0
 		for i := len(sequences) - 1; i >= 0; i-- {
 			sequence := sequences[i]
-			lastIdx := len(sequence) - 1
-			lastVal := sequence[lastIdx]
-			diff = lastVal + diff
+			firstVal := sequence[0]
+			diff = firstVal - diff
 		}
 		// add extrapolated value to sum
 		sum += diff
